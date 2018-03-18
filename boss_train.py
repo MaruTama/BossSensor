@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import random
+import os
 
 import numpy as np
 from sklearn.cross_validation import train_test_split
@@ -26,12 +27,14 @@ class Dataset(object):
         self.Y_valid = None
         self.Y_test = None
 
+    # ./data/以下の画像(データセット)を読み出す
     def read(self, img_rows=IMAGE_SIZE, img_cols=IMAGE_SIZE, img_channels=3, nb_classes=2):
         images, labels = extract_data('./data/')
         labels = np.reshape(labels, [-1])
         # numpy.reshape
         X_train, X_test, y_train, y_test = train_test_split(images, labels, test_size=0.3, random_state=random.randint(0, 100))
         X_valid, X_test, y_valid, y_test = train_test_split(images, labels, test_size=0.5, random_state=random.randint(0, 100))
+        # バックエンドのフレームワークによって画像の保持形式が異なるので、それらに合わせる
         if K.image_dim_ordering() == 'th':
             X_train = X_train.reshape(X_train.shape[0], 3, img_rows, img_cols)
             X_valid = X_valid.reshape(X_valid.shape[0], 3, img_rows, img_cols)
@@ -61,13 +64,16 @@ class Dataset(object):
         X_valid /= 255
         X_test /= 255
 
+        # train:訓練データ
+        # test:テストデータ
+        # valid:検証データ
+        # X:inputs Y:outputs
         self.X_train = X_train
         self.X_valid = X_valid
         self.X_test = X_test
         self.Y_train = Y_train
         self.Y_valid = Y_valid
         self.Y_test = Y_test
-
 
 class Model(object):
 
@@ -102,6 +108,7 @@ class Model(object):
 
         self.model.summary()
 
+    # batch_size=128, nb_epoch=2 acc: 94.14%
     def train(self, dataset, batch_size=32, nb_epoch=40, data_augmentation=True):
         # let's train the model using SGD + momentum (how original).
         sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
@@ -143,6 +150,11 @@ class Model(object):
                                      validation_data=(dataset.X_valid, dataset.Y_valid))
 
     def save(self, file_path=FILE_PATH):
+        # フォルダがないとモデルが保存できない
+        store_dir = os.path.abspath("./store")
+        # フォルダが無い時に作成する
+        if not os.path.exists(store_dir):
+            os.mkdir(store_dir)
         print('Model Saved.')
         self.model.save(file_path)
 
@@ -150,6 +162,7 @@ class Model(object):
         print('Model Loaded.')
         self.model = load_model(file_path)
 
+    # 予測(判定)する
     def predict(self, image):
         if K.image_dim_ordering() == 'th' and image.shape != (1, 3, IMAGE_SIZE, IMAGE_SIZE):
             image = resize_with_pad(image)
@@ -170,14 +183,20 @@ class Model(object):
         print("%s: %.2f%%" % (self.model.metrics_names[1], score[1] * 100))
 
 if __name__ == '__main__':
+    # データセットの読み出し
     dataset = Dataset()
     dataset.read()
 
+    # モデルの作成
     model = Model()
     model.build_model(dataset)
+    # 訓練
     model.train(dataset, nb_epoch=10)
+    # モデルの保存
     model.save()
 
     model = Model()
+    # モデルの読み出し
     model.load()
+    # 評価
     model.evaluate(dataset)

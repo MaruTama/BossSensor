@@ -2,7 +2,6 @@
 import cv2
 
 from boss_train import Model
-from image_show import show_image
 
 
 if __name__ == '__main__':
@@ -19,9 +18,10 @@ if __name__ == '__main__':
         # カスケード分類器の特徴量を取得する
         cascade = cv2.CascadeClassifier(cascade_path)
 
-        # 物体認識（顔認識）の実行
+        # OpenCVで物体認識（顔認識）の実行
         facerect = cascade.detectMultiScale(frame_gray, scaleFactor=1.2, minNeighbors=3, minSize=(10, 10))
         #facerect = cascade.detectMultiScale(frame_gray, scaleFactor=1.01, minNeighbors=3, minSize=(3, 3))
+        # 顔が取得できたとき
         if len(facerect) > 0:
             print('face detected')
             color = (255, 255, 255)  # 白
@@ -33,10 +33,11 @@ if __name__ == '__main__':
                 width, height = rect[2:4]
                 image = frame[y - 10: y + height, x: x + width]
 
+                # 作成したモデルに入力する
                 result = model.predict(image)
                 if result == 0:  # boss
                     print('Boss is approaching')
-                    show_image()
+                    # show_image()
                 else:
                     print('Not boss')
 

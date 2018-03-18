@@ -6,7 +6,7 @@ import cv2
 
 IMAGE_SIZE = 64
 
-
+# 入力画像を入力層のサイズに合わせて成形する
 def resize_with_pad(image, height=IMAGE_SIZE, width=IMAGE_SIZE):
 
     def get_padding_size(image):
@@ -34,33 +34,46 @@ def resize_with_pad(image, height=IMAGE_SIZE, width=IMAGE_SIZE):
     return resized_image
 
 
+
 images = []
 labels = []
+# dataディレクトリ内から全画像とラベルを取得する
 def traverse_dir(path):
     for file_or_dir in os.listdir(path):
         abs_path = os.path.abspath(os.path.join(path, file_or_dir))
         print(abs_path)
         if os.path.isdir(abs_path):  # dir
+            # 再帰してファイルまで探す
             traverse_dir(abs_path)
         else:                        # file
             if file_or_dir.endswith('.jpg'):
                 image = read_image(abs_path)
                 images.append(image)
                 labels.append(path)
+                # ちゃんとパディングされているか確認する
+                # pad_dir = os.path.abspath(os.path.join(path, "paded"))
+                # # フォルダが無い時に作成する
+                # if not os.path.exists(pad_dir):
+                #     os.mkdir(pad_dir)
+                # pad_path = os.path.join(pad_dir,file_or_dir)
+                # print(pad_path)
+                # cv2.imwrite(pad_path, image)
 
     return images, labels
 
-
+# 画像を読む込む
 def read_image(file_path):
+    # 連番画像ファイルを読み込む
     image = cv2.imread(file_path)
     image = resize_with_pad(image, IMAGE_SIZE, IMAGE_SIZE)
 
     return image
 
-
+# データの取得
 def extract_data(path):
     images, labels = traverse_dir(path)
     images = np.array(images)
+    # ラベルにbossが含まれているときに1にする。その他は0
     labels = np.array([0 if label.endswith('boss') else 1 for label in labels])
 
     return images, labels
